@@ -30,7 +30,7 @@ By breaking videos into fixed-duration segments and transcoding them in parallel
 ---
 
 ## Architecture
-
+```plaintext
         ┌────────────┐      ┌───────────────┐
         │   Upload   │      │ AWS Lambda    │
         │   to S3    │ ───▶ │ Trigger Job   │
