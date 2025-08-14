@@ -1,23 +1,56 @@
-# ECCDynamicVideoTranscoder
+# Video_transcoding
 
 ## Overview
 
-A cloud-native, distributed video transcoding pipeline leveraging Apache Spark on Jetstream2 and AWS services (S3, Lambda, DynamoDB, CloudFront + HLS). This project splits input videos into fixed-duration segments, processes them in parallel via Spark executors running FFmpeg, and reassembles them into HLS-compatible outputs, reducing end-to-end latency and improving scalability.
+A Cloud-Native, distributed video transcoding pipeline designed for high scalability and low latency.  
+It leverages Apache Spark running on Jetstream2 nodes in combination with AWS cloud services to split, process, and reassemble videos efficiently.  
+By breaking videos into fixed-duration segments and transcoding them in parallel, the pipeline significantly reduces end-to-end processing time and supports adaptive bitrate streaming.
 
-## Features
 
-- Segment-based Parallel Transcoding: Split videos into 2-minute chunks using FFmpeg.
+##  Features
 
-- Apache Spark on YARN: Distribute segment tasks across Jetstream2 worker nodes with dynamic executor allocation.
+- **Segment-based Parallel Transcoding**  
+  - Splits videos into **2-minute chunks** using `FFmpeg`.
+  - Each segment is processed independently and in parallel.
 
-- AWS Integration:
+- **Apache Spark on YARN**  
+  - Distributed segment transcoding across **Jetstream2 worker nodes**.
+  - Dynamic executor allocation for optimal resource usage.
 
-  - S3 for storing input, intermediate segments, and final outputs.
+- **AWS Integration**
+  - **S3** → Stores input videos, intermediate segments, and final HLS outputs.  
+  - **Lambda** → Triggers transcoding jobs on upload events.  
+  - **DynamoDB** → Maintains job metadata, enables fault-tolerant retries, and handles job locking.  
+  - **CloudFront + HLS** → Delivers adaptive bitrate streaming to end users.
 
-  - Lambda for event-driven job triggering.
+- **Fault Tolerance & Scalability**
+  - Retry failed segments automatically.
+  - Scale horizontally by adding more Spark executors.
 
-  - DynamoDB for metadata storage and fault-tolerant retries.
+---
 
-  - CloudFront + HLS for adaptive bitrate streaming.
+## Architecture
 
-- Job Locking via DynamoDB
+        ┌────────────┐      ┌───────────────┐
+        │   Upload   │      │ AWS Lambda    │
+        │   to S3    │ ───▶ │ Trigger Job   │
+        └────────────┘      └──────┬────────┘
+                                    │
+                           ┌────────▼─────────┐
+                           │  Apache Spark    │
+                           │ (Jetstream2 HPC) │
+                           └──────┬───────────┘
+                                  │
+         ┌────────────────────────┼────────────────────────┐
+         ▼                        ▼                        ▼
+   Segment 1                  Segment 2                 Segment N
+  (FFmpeg)                    (FFmpeg)                   (FFmpeg)
+         └──────────────┬───────────────┬─────────────────┘
+                        ▼               ▼
+                  Merge Segments    Generate HLS
+                        │
+                        ▼
+                Upload to S3 (Final Output)
+                        │
+                        ▼
+                 Stream via CloudFront
