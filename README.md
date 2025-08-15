@@ -80,7 +80,7 @@ Users can upload videos, choose between **single-node** or **multi-node** proces
 ![Architecture Diagram](assets/demo.png)
 
 
-![Frontend Upload](assets/stream.png)
+![Frontend Upload](assets/stream.jpg)
 ![Frontend Upload](assets/upload.png)
 
 
