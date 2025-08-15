@@ -1,7 +1,7 @@
 # DynamicVideoTranscoder
 
 ## 📌 Overview
-**DynamicVideoTranscoder** is a **full-stack, cloud-native, distributed video transcoding system**.  
+**DynamicVideoTranscoder** is a ** cloud-native, distributed video transcoding system**.  
 It combines an intuitive **web interface** with a **scalable backend pipeline** powered by **Apache Spark** on **Jetstream2 Cluster** and AWS cloud services.  
 Users can upload videos, choose between **single-node** or **multi-node** processing, and compare performance metrics — all in one platform.
 
