@@ -1,56 +1,76 @@
-# Video_transcoding
+# ECCDynamicVideoTranscoder
 
-## Overview
+## 📌 Overview
+**ECCDynamicVideoTranscoder** is a **full-stack, cloud-native, distributed video transcoding system**.  
+It combines an intuitive **web interface** with a **scalable backend pipeline** powered by **Apache Spark** on **Jetstream2 HPC** and AWS cloud services.  
+Users can upload videos, choose between **single-node** or **multi-node** processing, and compare performance metrics — all in one platform.
 
-A Cloud-Native, distributed video transcoding pipeline designed for high scalability and low latency.  
-It leverages Apache Spark running on Jetstream2 nodes in combination with AWS cloud services to split, process, and reassemble videos efficiently.  
-By breaking videos into fixed-duration segments and transcoding them in parallel, the pipeline significantly reduces end-to-end processing time and supports adaptive bitrate streaming.
+---
 
+## Key Features
 
-##  Features
+### 🎥 Frontend
+- User-friendly **video upload** form.
+- Processing mode selection: **Single Node** or **Multi Node**.
+- Real-time job status tracking (`Pending → Processing → Completed`).
+- Performance comparison charts for both processing modes.
+- Integrated HLS video player for streaming results via CloudFront.
 
-- **Segment-based Parallel Transcoding**  
-  - Splits videos into **2-minute chunks** using `FFmpeg`.
-  - Each segment is processed independently and in parallel.
-
-- **Apache Spark on YARN**  
-  - Distributed segment transcoding across **Jetstream2 worker nodes**.
-  - Dynamic executor allocation for optimal resource usage.
-
-- **AWS Integration**
-  - **S3** → Stores input videos, intermediate segments, and final HLS outputs.  
-  - **Lambda** → Triggers transcoding jobs on upload events.  
-  - **DynamoDB** → Maintains job metadata, enables fault-tolerant retries, and handles job locking.  
-  - **CloudFront + HLS** → Delivers adaptive bitrate streaming to end users.
-
-- **Fault Tolerance & Scalability**
-  - Retry failed segments automatically.
-  - Scale horizontally by adding more Spark executors.
+### ⚙ Backend Processing
+- **AWS S3** for storing uploaded videos, intermediate segments, and final outputs.
+- **AWS Lambda** triggers job creation in **MongoDB** with initial status `Pending`.
+- **Jetstream2 HPC** runs **PySpark** jobs to transcode video segments using FFmpeg.
+- **Single Node Mode**: Entire video transcoded on one Jetstream node.
+- **Multi Node Mode**: Video split into chunks and processed in parallel across multiple nodes.
+- **MongoDB** stores job metadata, status updates, and performance metrics.
+- **AWS CloudFront + HLS** delivers adaptive bitrate streaming.
 
 ---
 
 ## Architecture
+
 ```plaintext
-        ┌────────────┐      ┌───────────────┐
-        │   Upload   │      │ AWS Lambda    │
-        │   to S3    │ ───▶ │ Trigger Job   │
-        └────────────┘      └──────┬────────┘
-                                    │
-                           ┌────────▼─────────┐
-                           │  Apache Spark    │
-                           │ (Jetstream2 HPC) │
-                           └──────┬───────────┘
-                                  │
-         ┌────────────────────────┼────────────────────────┐
-         ▼                        ▼                        ▼
-   Segment 1                  Segment 2                 Segment N
-  (FFmpeg)                    (FFmpeg)                   (FFmpeg)
-         └──────────────┬───────────────┬─────────────────┘
-                        ▼               ▼
-                  Merge Segments    Generate HLS
-                        │
-                        ▼
-                Upload to S3 (Final Output)
-                        │
-                        ▼
-                 Stream via CloudFront
+          ┌────────────┐
+          │   Frontend │
+          │  (React)   │
+          └─────┬──────┘
+                │ Upload Video
+                ▼
+        ┌───────────────┐
+        │ S3 Input Bucket│
+        └─────┬─────────┘
+              │ S3 Event
+              ▼
+       ┌──────────────┐
+       │ AWS Lambda   │
+       │ Create Mongo │
+       │ Record (Pending)
+       └─────┬────────┘
+             │
+             ▼
+    ┌────────────────────┐
+    │ Jetstream2 Cluster │
+    │   PySpark + FFmpeg │
+    └─────┬──────────────┘
+          │
+  ┌───────┴────────┐
+  │ Single Node     │
+  │ Multi Node      │
+  └───────┬────────┘
+          │
+          ▼
+  ┌───────────────────────┐
+  │ S3 Output Bucket       │
+  │ (HLS Segments + M3U8)  │
+  └───────┬───────────────┘
+          │
+          ▼
+    ┌─────────────┐
+    │ CloudFront  │
+    │ Streaming   │
+    └─────┬───────┘
+          │
+          ▼
+     Frontend Player
+
+
